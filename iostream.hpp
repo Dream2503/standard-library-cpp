@@ -3,7 +3,7 @@
 
 namespace Dream {
     class ostream final {
-        template<class T>
+        template<typename T>
         constexpr const ostream &overload(const char *format, T value) const noexcept {
             printf(format, value);
             return *this;
@@ -27,7 +27,7 @@ namespace Dream {
 
 
     class istream final {
-        template<class T>
+        template<typename T>
         constexpr const istream &overload(const char *format, T value) const noexcept {
             scanf(format, value);
             return *this;
@@ -47,7 +47,8 @@ namespace Dream {
         constexpr const istream &operator>>(char *value) const noexcept { return overload("%s", value); }
         constexpr const istream &operator>>(void *value) const noexcept { return overload("%p", value); }
     };
+
     constexpr ostream cout;
     constexpr istream cin;
     constexpr char endl = '\n';
-}
+} // namespace Dream
