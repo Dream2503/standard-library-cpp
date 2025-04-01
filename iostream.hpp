@@ -25,7 +25,6 @@ namespace Dream {
         constexpr const ostream &operator<<(const std::nullptr_t) const noexcept { return *this << "nullptr"; }
     };
 
-
     class istream final {
         template<typename T>
         constexpr const istream &overload(const char *format, T value) const noexcept {
