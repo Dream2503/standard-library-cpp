@@ -12,26 +12,25 @@ namespace Dream {
         size_t capacity_, size_;
         allocator<char> alloc_;
 
-
     public:
         const size_t npos = static_cast<size_t>(-1);
 
-        class iterator final : public Dream::iterator<char, iterator> {
+        class iterator final : public Dream::iterator<char> {
         public:
-            using Dream::iterator<char, iterator>::iterator;
+            using Dream::iterator<char>::iterator;
         };
 
-        class reverse_iterator final : public Dream::reverse_iterator<char, reverse_iterator> {
+        class reverse_iterator final : public Dream::reverse_iterator<char> {
         public:
-            using Dream::reverse_iterator<char, reverse_iterator>::reverse_iterator;
+            using Dream::reverse_iterator<char>::reverse_iterator;
         };
 
-        class const_iterator final : public Dream::iterator<const char, const_iterator> {
+        class const_iterator final : public Dream::iterator<const char> {
         public:
             using iterator::iterator;
         };
 
-        class const_reverse_iterator final : public Dream::reverse_iterator<const char, const_reverse_iterator> {
+        class const_reverse_iterator final : public Dream::reverse_iterator<const char> {
         public:
             using reverse_iterator::reverse_iterator;
         };
@@ -77,7 +76,8 @@ namespace Dream {
             }
         }
 
-        constexpr string(string &&other, const size_t pos = 0, const size_t count = 0, const allocator<char> &alloc = allocator<char>()) noexcept: buffer_(nullptr), capacity_(count + 1), size_(count), alloc_(alloc) {
+        constexpr string(string &&other, const size_t pos = 0, const size_t count = 0, const allocator<char> &alloc = allocator<char>()) noexcept :
+            buffer_(nullptr), capacity_(count + 1), size_(count), alloc_(alloc) {
             if (size_) {
                 if ((buffer_ = alloc_.allocate(capacity_ * sizeof(char)))) {
                     for (size_t i = pos; i <= pos + size_; ++i) {
@@ -98,10 +98,9 @@ namespace Dream {
 
         constexpr string &operator=(const string &other) noexcept {
             if (this != &other) {
-                return *this;
+                alloc_.deallocate(buffer_);
+                *this = string(other.begin(), other.end());
             }
-            alloc_.deallocate(buffer_);
-            *this = string(other.begin(), other.end());
             return *this;
         }
 
@@ -109,6 +108,7 @@ namespace Dream {
             if (this != &other) {
                 capacity_ = other.capacity_;
                 size_ = other.size_;
+                alloc_ = other.alloc_;
                 alloc_.deallocate(buffer_);
                 buffer_ = other.buffer_;
                 other.buffer_ = nullptr;
@@ -118,7 +118,7 @@ namespace Dream {
         }
 
         constexpr string &assign(const string &other) noexcept { return *this = other; }
-        constexpr string &assign(const string &&other) noexcept { return *this = (string &&) other; }
+        constexpr string &assign(const string &&other) noexcept { return *this = const_cast<string &&>(other); }
         constexpr string &assign(const size_t count, const char ch) { return *this = string(count, ch); }
         constexpr string &assign(const char *str, const size_t count) { return *this = string(str, count); }
         constexpr string &assign(const char *str) { return *this = str; }
@@ -148,24 +148,20 @@ namespace Dream {
 
         constexpr const char &front() const noexcept { return buffer_[0]; }
         constexpr char &front() noexcept { return buffer_[0]; }
-
         constexpr const char &back() const noexcept { return buffer_[size_ - 1]; }
         constexpr char &back() noexcept { return buffer_[size_ - 1]; }
 
         constexpr char *data() noexcept { return buffer_; }
         constexpr const char *data() const noexcept { return buffer_; }
-
         constexpr const char *c_str() const noexcept { return buffer_; }
 
         constexpr iterator begin() const noexcept { return buffer_; }
         constexpr const_iterator cbegin() const noexcept { return buffer_; }
-
         constexpr iterator end() const noexcept { return buffer_ + size_; }
         constexpr const_iterator cend() const noexcept { return buffer_ + size_; }
 
         constexpr reverse_iterator rbegin() const noexcept { return buffer_ + size_ - 1; }
         constexpr const_reverse_iterator crbegin() const noexcept { return buffer_ + size_ - 1; }
-
         constexpr reverse_iterator rend() const noexcept { return buffer_ - 1; }
         constexpr const_reverse_iterator crend() const noexcept { return buffer_ - 1; }
 
@@ -206,13 +202,13 @@ namespace Dream {
                 return npos;
             }
 
-            for (size_t i = pos; i <= size_ - count; ++i) {
-                size_t j = 0;
+            for (size_t i = size_ - 1; i >= pos + count; --i) {
+                size_t j = count;
 
-                while (j < count && buffer_[i + j] == str[j]) {
-                    ++j;
+                while (j != npos && buffer_[i + j - count] == str[j]) {
+                    --j;
                 }
-                if (j == count) {
+                if (j == npos) {
                     return i;
                 }
             }
@@ -270,8 +266,6 @@ namespace Dream {
             return *this;
         }
 
-        // size_t capacity();
-
         void clear();
 
         int compare(const string &other);
@@ -288,7 +282,7 @@ namespace Dream {
 
         size_t copy(const char *other, size_t len, size_t pos);
 
-        bool empty() {return size_ == 0;}
+        bool empty() const { return size_ == 0; }
 
         bool ends_with(const string &suffix);
 
@@ -301,14 +295,6 @@ namespace Dream {
         iterator &erase(const_iterator &first, const_iterator &last);
 
         string &erase(size_t pos, size_t count);
-
-        size_t find(const string &other, size_t pos);
-
-        size_t find(const char *other, size_t pos);
-
-        size_t find(const char *other, size_t pos, size_t count);
-
-        size_t find(char ch, size_t pos);
 
         size_t find_first_not_of(const string &other, size_t pos);
 
@@ -341,8 +327,6 @@ namespace Dream {
         size_t find_last_of(const char *other, size_t pos, size_t count);
 
         size_t find_last_of(char ch, size_t pos);
-
-        allocator<char> get_allocator();
 
         string &insert(size_t pos, const string &other);
 
@@ -381,6 +365,18 @@ namespace Dream {
                     capacity_ = new_capacity;
                 }
             }
+        }
+
+        constexpr string operator+(const string &other) const noexcept {
+            string temp = *this;
+            temp.append(other);
+            return temp;
+        }
+
+        constexpr string operator+(const char *str) const noexcept {
+            string temp = *this;
+            temp.append(str);
+            return temp;
         }
 
         constexpr ~string() noexcept {
