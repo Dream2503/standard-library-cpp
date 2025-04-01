@@ -16,7 +16,7 @@ namespace Dream {
             stream << quote.delim_;
             const char *str = quote.str_;
 
-            while (*str) {
+            while (str && *str) {
                 if (*str == quote.delim_ || *str == quote.escape_) {
                     stream << quote.escape_;
                 }
@@ -52,5 +52,4 @@ namespace Dream {
             return stream;
         }
     };
-
 } // namespace Dream
